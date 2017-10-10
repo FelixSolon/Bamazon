@@ -19,25 +19,55 @@ var connection = mysql.createConnection({
   connection.end();
 });*/
 
+function updateStock(unitsSold){
+    
+}
+
 function afterConnection() {
   connection.query("SELECT * FROM products", function(err, res) {
     if (err) throw err;
     var inquirerArray = [];
     console.table(res);
+    var result = res;
     //this might work
     for (var i = 0; i < res.length; i++) {
-        inquirerArray.push(res[i].item_id);
-        console.log(inquirerArray);
+        //Programatically generate ID choices
+        inquirerArray.push(String(res[i].item_id));
     }
     inquirer.prompt([
     {
         type: 'list',
         name: "idPrompt",
         message: 'What is the ID of the product you wish to buy?',
-        choices: inquirerArray[3]
+        //Honestly, I can't believe this worked.
+        choices: inquirerArray
     }
     ]).then(function(answer){
-        console.log(answer);
+        var itemId = answer.idPrompt;
+        //for recursion purposes
+        function unitInput(){
+            inquirer.prompt([
+            {
+                type: 'input',
+                name: "units",
+                message: "How many would you like to buy?"
+            }
+            ]).then(function(answer){
+                var units=parseInt(answer.units);
+                if(isNaN(units)){
+                    console.log("\nPlease enter a number\n");
+                    unitInput();
+                } else {
+                    var unitsAvailable = result.find(x => x.item_id === parseInt(itemId))
+                    if(units > unitsAvailable.stock_quantity){
+                        console.log("Insufficient Quantity!");
+                    }
+                };
+                //I am so glad I randomly looked up arrow functions earlier today
+                
+            })
+            };
+        unitInput()
     });
     connection.end();
   });
