@@ -14,6 +14,29 @@ var connection = mysql.createConnection({
   database: "bamazon"
 });
 
+//Directly stolen from the customer one.
+//ToDo: Export this so I can require it
+function updateStock(unitsRemaining, id){
+    console.log("Updating all item quantities...\n");
+    var query = connection.query(
+        "UPDATE products SET ? WHERE ?",
+        [
+        {
+            stock_quantity: unitsRemaining
+        },
+        {
+            item_id: id
+        }
+        ],
+        function(err, res) {
+            console.log("Order Placed!");
+    }
+  );
+
+  // logs the actual query being run
+  console.log(query.sql);
+}
+
 function viewProducts(){
     connection.query("SELECT * FROM products", function(err, res) {
     if (err) throw err;
@@ -29,13 +52,52 @@ function viewLowInventory(){
     var inquirerArray = [];
     for (i=0; i < res.length; i++){
         if (parseInt(res[i].stock_quantity) < 5){
-            inquirerArray.push(res[i])
+            inquirerArray.push(res[i]);
         };
     };
     console.table(inquirerArray);
     connection.end()
     });
 };
+
+function addToInventory(){
+    connection.query("SELECT * FROM products", function(err, res) {
+    if (err) throw err;
+    var inquirerArray = [];
+    var result = res;
+    for (i=0; i < res.length; i++){
+        inquirerArray.push(res[i].product_name);
+    };
+    inquirer.prompt([
+    {
+        name: "chosenProduct",
+        type: "list",
+        message: "What product would you like to add?",
+        choices: inquirerArray
+    },
+    {
+        name: "productAmount",
+        type: "input",
+        message: "How many would you like to add?"
+    }
+    ]).then(function(answer){
+        var units=parseInt(answer.productAmount);
+        console.log(units)
+                if(isNaN(units)){
+                    console.log("\nPlease enter a number\n");
+                    addToInventory();
+                } else {
+                    var unitsAvailable = result.find(x => x.product_name === answer.chosenProduct)
+                    console.log("UA " + unitsAvailable)
+                    var newTotal = unitsAvailable.stock_quantity + units
+                    updateStock(newTotal, unitsAvailable.item_id)
+                    console.log(newTotal);
+                    connection.end();
+                };
+    });
+
+    });
+}
 
 function start(){
     inquirer.prompt([
@@ -55,7 +117,7 @@ function start(){
             viewLowInventory();
             break;
             case "Add to Inventory":
-
+            addToInventory();
             break;
             case "Add New Product":
 
