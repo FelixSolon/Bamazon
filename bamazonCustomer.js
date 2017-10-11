@@ -14,13 +14,14 @@ var connection = mysql.createConnection({
   database: "bamazon"
 });
 
-function updateStock(unitsRemaining, id){
+function updateStock(unitsRemaining, id, totalSales){
     console.log("Updating all item quantities...\n");
     var query = connection.query(
         "UPDATE products SET ? WHERE ?",
         [
         {
-            stock_quantity: unitsRemaining
+            stock_quantity: unitsRemaining,
+            product_sales: totalSales
         },
         {
             item_id: id
@@ -36,16 +37,29 @@ function updateStock(unitsRemaining, id){
 }
 
 function afterConnection() {
-  connection.query("SELECT * FROM products", function(err, res) {
+    //originally was SELECT * etc.
+    //But working on the bamazonSupervisor.js, I figure customers don't need to see *all* the data.
+  connection.query("SELECT item_id, product_name, price, stock_quantity, product_sales FROM products", function(err, res) {
     if (err) throw err;
     var inquirerArray = [];
-    console.table(res);
     var result = res;
+    var customerView = [];
     //this might work
-    for (var i = 0; i < res.length; i++) {
+    for (var i = 0; i < result.length; i++) {
         //Programatically generate ID choices
-        inquirerArray.push(String(res[i].item_id));
+        inquirerArray.push(String(result[i].item_id));
+        //Generate an array that doesn't show total sales, as the customers don't need to know that.
+        //This took more time than I'd like to admit.
+        //Creates an empty object in position "i"
+        customerView.push({});
+        //sets the properties of that object to the properties of result
+        //Because trying to strip out the "product_sales" field from the result object meant my SQL wouldn't update it later.
+        customerView[i].item_id = result[i].item_id;
+        customerView[i].product_name = result[i].product_name;
+        customerView[i].price = result[i].price;
+        customerView[i].stock_quantity = result[i].stock_quantity;
     }
+    console.table(customerView);
     inquirer.prompt([
     {
         type: 'list',
@@ -70,17 +84,21 @@ function afterConnection() {
                     console.log("\nPlease enter a number\n");
                     unitInput();
                 } else {
-                    var unitsAvailable = result.find(x => x.item_id === parseInt(itemId))
+                    //I am so glad I randomly looked up arrow functions earlier
+                    var unitsAvailable = result.find(x => x.item_id === parseInt(itemId));
+                    var unitPrice = parseFloat(unitsAvailable.price);
+                    console.log("Unit Price: " + unitPrice);
+                    var transactionSales = units * unitPrice;
+                    var totalSales = transactionSales + unitsAvailable.product_sales;
                     if(units > unitsAvailable.stock_quantity){
                         console.log("Insufficient Quantity!");
                     } else {
                         var newTotal = unitsAvailable.stock_quantity - units
-                        updateStock(newTotal, parseInt(itemId))
+                        updateStock(newTotal, parseInt(itemId), totalSales)
                         console.log(newTotal);
                         connection.end();
                     }
                 };
-                //I am so glad I randomly looked up arrow functions earlier today
                 
             })
             };
