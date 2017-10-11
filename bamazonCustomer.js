@@ -1,6 +1,7 @@
 var mysql = require('mysql');
 var inquirer = require('inquirer');
 require('console.table')
+var password = require("./password.js");
 var connection = mysql.createConnection({
   host: "localhost",
   port: 3306,
@@ -9,18 +10,29 @@ var connection = mysql.createConnection({
   user: "root",
 
   // Your password
-  password: "7h3MY%QLru135",
+  password: password.password,
   database: "bamazon"
 });
 
-/*connection.connect(function(err) {
-  if (err) throw err;
-  console.log("connected as id " + connection.threadId);
-  connection.end();
-});*/
+function updateStock(unitsRemaining, id){
+    console.log("Updating all item quantities...\n");
+    var query = connection.query(
+        "UPDATE products SET ? WHERE ?",
+        [
+        {
+            stock_quantity: unitsRemaining
+        },
+        {
+            item_id: id
+        }
+        ],
+        function(err, res) {
+            console.log("Order Placed!");
+    }
+  );
 
-function updateStock(unitsSold){
-    
+  // logs the actual query being run
+  console.log(query.sql);
 }
 
 function afterConnection() {
@@ -61,15 +73,20 @@ function afterConnection() {
                     var unitsAvailable = result.find(x => x.item_id === parseInt(itemId))
                     if(units > unitsAvailable.stock_quantity){
                         console.log("Insufficient Quantity!");
+                    } else {
+                        var newTotal = unitsAvailable.stock_quantity - units
+                        updateStock(newTotal, parseInt(itemId))
+                        console.log(newTotal);
+                        connection.end();
                     }
                 };
                 //I am so glad I randomly looked up arrow functions earlier today
                 
             })
             };
-        unitInput()
+        unitInput();
     });
-    connection.end();
+    
   });
 }
 
