@@ -23,6 +23,20 @@ function viewProducts(){
     });
 };
 
+function viewLowInventory(){
+    connection.query("SELECT * FROM products", function(err, res) {
+    if (err) throw err;
+    var inquirerArray = [];
+    for (i=0; i < res.length; i++){
+        if (parseInt(res[i].stock_quantity) < 5){
+            inquirerArray.push(res[i])
+        };
+    };
+    console.table(inquirerArray);
+    connection.end()
+    });
+};
+
 function start(){
     inquirer.prompt([
     {
@@ -38,7 +52,7 @@ function start(){
             viewProducts();
             break;
             case "View Low Inventory":
-
+            viewLowInventory();
             break;
             case "Add to Inventory":
 
