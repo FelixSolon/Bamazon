@@ -14,13 +14,43 @@ var connection = mysql.createConnection({
   database: "bamazon"
 });
 
-inquirer.prompt([
-{
-    name: "menu",
-    message: "Select your operation:",
-    type: "list",
-    choices: ["View Products for Sale", "View Low Inventory", "Add to Inventory", "Add New Product"]
-}
-]).then(function(answer){
+function viewProducts(){
+    connection.query("SELECT * FROM products", function(err, res) {
+    if (err) throw err;
+    var inquirerArray = [];
+    console.table(res);
+    connection.end()
+    });
+};
 
-});
+function start(){
+    inquirer.prompt([
+    {
+        name: "menu",
+        message: "Select your operation:",
+        type: "list",
+        choices: ["View Products for Sale", "View Low Inventory", "Add to Inventory", "Add New Product"]
+    }
+    ]).then(function(answer){
+        console.log(answer);
+        switch (answer.menu){
+            case "View Products for Sale":
+            viewProducts();
+            break;
+            case "View Low Inventory":
+
+            break;
+            case "Add to Inventory":
+
+            break;
+            case "Add New Product":
+
+            break;
+            default:
+                console.log("I'm sorry, please try again.")
+                start();
+        }
+    });
+};
+
+start();
