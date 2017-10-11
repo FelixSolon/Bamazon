@@ -95,9 +95,46 @@ function addToInventory(){
                     connection.end();
                 };
     });
-
     });
-}
+};
+
+function addNewProduct(){
+    inquirer.prompt([
+    {
+        name: "productName",
+        type: "input",
+        message: "What is the name of the product you want to add?"
+    },
+    {
+        name: "productPrice",
+        type: "input",
+        message: "How much does it cost?"
+    },
+    {
+        name: "productStartingAmount",
+        type: "input",
+        message: "How many do you have?"
+    },
+    {
+        name: "productDepartment",
+        type: "input",
+        message: "Which department does it belong in?"
+    }
+    ]).then(function(answer){
+        var query = connection.query("INSERT INTO products SET ?",
+        {
+            product_name: answer.productName,
+            price: answer.productPrice,
+            stock_quantity: answer.productStartingAmount,
+            department_name: answer.productDepartment
+        },
+        function(err, res){
+            console.log(err);
+            console.log(res);
+            connection.end();
+        });
+    });
+};
 
 function start(){
     inquirer.prompt([
@@ -120,7 +157,7 @@ function start(){
             addToInventory();
             break;
             case "Add New Product":
-
+            addNewProduct();
             break;
             default:
                 console.log("I'm sorry, please try again.")
