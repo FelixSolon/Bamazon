@@ -15,7 +15,9 @@ var connection = mysql.createConnection({
 });
 
 function viewSales(){
-    connection.query("SELECT departments.department_id AS 'ID#', departments.department_name AS 'Department Name', departments.over_head_costs AS Overhead, sum(products.product_sales) AS 'Total Sales', products.product_sales- departments.over_head_costs AS 'Total Profit' FROM products RIGHT JOIN departments ON products.department_name = departments.department_name GROUP BY departments.department_id;", 
+    //I feel simultaneously like a bad person for writing a query like this
+    //And *super* accomplished that I actually got it working.
+    connection.query("SELECT departments.department_id AS 'ID#', departments.department_name AS 'Department Name', departments.over_head_costs AS Overhead, COALESCE(sum(products.product_sales), '0.00') AS 'Total Sales', COALESCE(products.product_sales- departments.over_head_costs, 0.00- departments.over_head_costs) AS 'Total Profit' FROM products RIGHT JOIN departments ON products.department_name = departments.department_name GROUP BY departments.department_id;", 
     function(err, res) {
     if (err) throw err;
     console.table(res);
@@ -23,6 +25,46 @@ function viewSales(){
     });
 };
 
+function addNewDepartment(){
+    inquirer.prompt([
+        {
+            name: "departmentName",
+            type: "input",
+            message: "What is the name of the department you want to add?"
+        }
+        ]).then(function(answer){
+            function overheadPrompt(){
+                var deptName = answer.departmentName;
+                inquirer.prompt([
+                {
+                    name: "overhead",
+                    type: "input",
+                    message: "How much is the overhead?"
+                }
+            ]).then(function(answer){
+                var overhead=parseFloat(answer.overhead).toFixed(2);
+                //If someone types in something that isn't a number, yell at them then ask again.
+                //I'm sure there's a library that can turn "Thirty Four" into 34, but I haven't gone looking yet.
+                if(isNaN(overhead)){
+                    console.log("\nPlease enter a number\n");
+                    overheadPrompt();
+                } else {
+                    var query = connection.query("INSERT INTO departments SET ?",
+                    {
+                        department_name: deptName,
+                        over_head_costs: answer.overhead
+                    },
+                    function(err, res){
+                        console.log(err);
+                        console.log(res);
+                        connection.end();
+                    });
+                };
+            });
+        };
+        overheadPrompt();
+    });  
+};
 inquirer.prompt([
 {
     type: 'list',
@@ -37,7 +79,7 @@ inquirer.prompt([
         viewSales();
         break;
         case "Create New Department":
-
+        addNewDepartment();
 
     }
 
