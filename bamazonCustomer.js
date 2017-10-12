@@ -128,7 +128,7 @@ function afterConnection() {
                     var transactionSales = units * unitPrice;
 
                     //Figure out the total sales to update the database
-                    var totalSales = transactionSales + unitsAvailable.product_sales;
+                    var totalSales = (transactionSales + unitsAvailable.product_sales).toFixed(2);
 
                     //Pop an error if someone tries to buy things into negative numbers.
                     if(units > unitsAvailable.stock_quantity){

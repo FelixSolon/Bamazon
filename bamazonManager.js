@@ -29,18 +29,12 @@ function updateStock(unitsRemaining, id){
         }
         ],
         function(err, res) {
-            console.log("Order Placed!");
-    }
-  );
-
-  // logs the actual query being run
-  console.log(query.sql);
+    });
 }
 
 function viewProducts(){
-    connection.query("SELECT * FROM products", function(err, res) {
+    connection.query("SELECT item_id, product_name, price, stock_quantity FROM products", function(err, res) {
     if (err) throw err;
-    var inquirerArray = [];
     console.table(res);
     connection.end()
     });
@@ -74,26 +68,30 @@ function addToInventory(){
         type: "list",
         message: "What product would you like to add?",
         choices: inquirerArray
-    },
-    {
-        name: "productAmount",
-        type: "input",
-        message: "How many would you like to add?"
     }
     ]).then(function(answer){
-        var units=parseInt(answer.productAmount);
-        console.log(units)
+        var holding = answer;
+        function amountPrompt(answer){
+            inquirer.prompt([
+            {
+            name: "productAmount",
+            type: "input",
+            message: "How many would you like to add?"
+            }]).then(function(answer){
+                var units=parseInt(answer.productAmount);
                 if(isNaN(units)){
                     console.log("\nPlease enter a number\n");
-                    addToInventory();
+                    amountPrompt();
                 } else {
-                    var unitsAvailable = result.find(x => x.product_name === answer.chosenProduct)
-                    console.log("UA " + unitsAvailable)
+                    var unitsAvailable = result.find(x => x.product_name === holding.chosenProduct)
                     var newTotal = unitsAvailable.stock_quantity + units
                     updateStock(newTotal, unitsAvailable.item_id)
-                    console.log(newTotal);
+                    console.log("There are now " + newTotal + " " + unitsAvailable.product_name + " on hand.");
                     connection.end();
                 };
+            });
+        };
+        amountPrompt(holding);      
     });
     });
 };
@@ -121,6 +119,7 @@ function addNewProduct(){
         message: "Which department does it belong in?"
     }
     ]).then(function(answer){
+        var holding = answer;
         var query = connection.query("INSERT INTO products SET ?",
         {
             product_name: answer.productName,
@@ -129,8 +128,7 @@ function addNewProduct(){
             department_name: answer.productDepartment
         },
         function(err, res){
-            console.log(err);
-            console.log(res);
+            console.log("Added " + holding.productName + " to the system!");
             connection.end();
         });
     });
@@ -145,7 +143,6 @@ function start(){
         choices: ["View Products for Sale", "View Low Inventory", "Add to Inventory", "Add New Product"]
     }
     ]).then(function(answer){
-        console.log(answer);
         switch (answer.menu){
             case "View Products for Sale":
             viewProducts();

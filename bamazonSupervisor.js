@@ -55,8 +55,7 @@ function addNewDepartment(){
                         over_head_costs: answer.overhead
                     },
                     function(err, res){
-                        console.log(err);
-                        console.log(res);
+                        console.log("New Department " + deptName + " added!");
                         connection.end();
                     });
                 };
