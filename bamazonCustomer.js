@@ -1,8 +1,8 @@
 //set up all my requirements
 var mysql = require('mysql');
 var inquirer = require('inquirer');
-require('console.table')
-//You don't get to see my password. Get your own dang MySql table :-p
+require('console.table');
+//You don't get to see my password. Get your own dang MySQL table :-p
 var password = require("./password.js");
 var connection = mysql.createConnection({
   host: "localhost",
@@ -15,9 +15,10 @@ var connection = mysql.createConnection({
 });
 
 //Write my functions early
-//ToDo: Throw this into a file and require it
+//ToDo: Throw this into a file and require it, because it's reused in other files.
 function updateStock(unitsRemaining, id, totalSales){
     var query = connection.query(
+        //I kinda like this syntax, though I see why Bruce didn't want to teach it.
         "UPDATE products SET ? WHERE ?",
         [
         {
@@ -28,12 +29,13 @@ function updateStock(unitsRemaining, id, totalSales){
             item_id: id
         }
         ],
+        //I don't know if this function is actually necessary any more, now that I'm not logging 'res'
+        //But my code does odd things sometimes and I don't want to break it by not providing the second argument
+        //So here it stays
         function(err, res) {
-
-    }
-  );
-
-}
+        };
+    );
+};
 
 //The master function that runs everything on the Customer side.
 function afterConnection() {
@@ -57,6 +59,8 @@ function afterConnection() {
         //Left to my own devices, I'd do result[i].product_name for UX reasons and change code as necessary later
         //But the spec says to let them pick the ID.
         //So they can pick a number.
+        //This line takes the ID from the result[i] position, makes it a string, then throws it in the array.
+        //Because Inquirer needs everything to be a string for whatever reason.
         inquirerArray.push(String(result[i].item_id));
         
         //Up next, generate an array that doesn't show total sales, as the customers don't need to know that.
@@ -73,7 +77,7 @@ function afterConnection() {
         customerView[i].Price = result[i].price;
         //There used to be a "total in stock" number here, but the spec doesn't call for it
         //So I took it out, even though as a customer I'd like to know if there's only like 1 left available.
-    }
+    };
 
     //leave an extra space so it's pretty, then log the table.
     console.log("");
@@ -87,14 +91,15 @@ function afterConnection() {
         message: 'What is the ID of the product you wish to buy?',
         //Honestly, I can't believe this worked but I'm quite happy that it did.
         //This way, I don't have to update the "choices" property every time the table updates.
+        //Hooray for not having Magic Numbers
         choices: inquirerArray
     }
     ]).then(function(answer){
-        //for ease of reference, throw the prompt into a variable.
+        //for ease of reference, throw the prompt answer into a variable.
         var itemId = answer.idPrompt;
 
         //for recursion purposes.
-        //I should really define this outside the .then, but I don't want to refactor that much at the moment.
+        //I should really define this outside the .then([]) function,, but I don't want to refactor that much at the moment.
         //ToDo: Find motivation to refactor.
         function unitInput(){
             inquirer.prompt([
@@ -115,13 +120,15 @@ function afterConnection() {
                     unitInput();
                 } else {
                     //I am so glad I randomly looked up arrow functions earlier
+
                     //Sets a badly-named variable (left over from previous versions) that is an object which, somewhere in it, has a property item_id the value of which matches itemId parsed as a number
                     //There probably should be some kind of validation to make sure it doesn't select multiple things
                     //But it's looking for the primary key
                     //So if it finds multiple results I have larger issues.
                     var unitsAvailable = result.find(x => x.item_id === parseInt(itemId));
 
-                    //Find the price of the item, make sure it's acting like a number, and that it's not $5.98000000000004
+                    //Find the price of the item, make sure it's acting like a number, and that it's not $5.98000000000004.
+                    //Again.
                     var unitPrice = parseFloat(unitsAvailable.price).toFixed(2);
 
                     //Figure out the cost of this transaction to display for the user
@@ -135,6 +142,7 @@ function afterConnection() {
                         console.log("\nInsufficient Quantity!\n");
 
                         //And no, you don't get to leave until you buy something or use CTRL-C.
+                        //Or enter 0. Or a negative number, if you really want a refund or something.
                         unitInput();
                     } else {
                         //Figure out the new total on hand to update the DB.
@@ -150,11 +158,10 @@ function afterConnection() {
                         //Make sure the connection ends.
                         connection.end();
                     };
-                };
-                
+                };          
             })
-            };
-        //Actually run the unitInput function
+        };
+        //Actually run the unitInput function I just defined.
         unitInput();
     });
   });
